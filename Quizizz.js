@@ -26,24 +26,43 @@
         });
 
         const ball = document.createElement('div');
-        ball.innerHTML = '✨';
+        ball.innerHTML = '✨<span style="position:absolute;bottom:-18px;font-size:10px;width:100px;left:-25px;text-align:center;color:#aaa;">feito por Pajé_01</span>';
         Object.assign(ball.style, {
-            width: '50px', height: '50px', background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
-            borderRadius: '50%', display: 'none', alignItems: 'center', justifyContent: 'center',
-            fontSize: '24px', cursor: 'grab', boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-            transition: 'transform 0.2s'
+            width: '50px', height: '50px',
+            background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
+            borderRadius: '50%',
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            cursor: 'grab',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+            transition: 'transform 0.2s',
+            position: 'relative'
         });
 
         const panel = document.createElement('div');
         Object.assign(panel.style, {
-            width: '220px', background: '#1e1e1e', borderRadius: '15px',
-            border: '2px solid #a78bfa', padding: '15px', color: 'white',
-            display: 'flex', flexDirection: 'column', gap: '10px',
+            width: '220px',
+            background: '#1e1e1e',
+            borderRadius: '15px',
+            border: '2px solid #a78bfa',
+            padding: '15px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
         });
 
         const header = document.createElement('div');
-        header.innerHTML = '<b style="color:#a78bfa">Quizizz IA</b> <span style="float:right;cursor:pointer;opacity:0.7" id="q-min">➖</span>';
+        header.innerHTML = `
+            <b style="color:#a78bfa">Quizizz IA</b>
+            <span style="float:right;display:flex;gap:8px;">
+                <span style="cursor:pointer;opacity:0.7" id="q-min">➖</span>
+                <span style="cursor:pointer;opacity:0.7" id="q-close">❌</span>
+            </span>
+        `;
         header.style.cursor = 'grab';
         header.style.paddingBottom = '8px';
         header.style.borderBottom = '1px solid #333';
@@ -56,11 +75,19 @@
             loginBtn.style.background = signed ? '#34A853' : '#4285F4';
         };
         Object.assign(loginBtn.style, {
-            border: 'none', borderRadius: '8px', padding: '10px', color: 'white', 
-            cursor: 'pointer', fontWeight: '500', transition: 'opacity 0.2s'
+            border: 'none',
+            borderRadius: '8px',
+            padding: '10px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '500',
+            transition: 'opacity 0.2s'
         });
         loginBtn.onclick = async () => {
-            try { await window.puter.auth.signIn(); updateLoginStatus(); } catch(e) {}
+            try {
+                await window.puter.auth.signIn();
+                updateLoginStatus();
+            } catch(e) {}
         };
         panel.appendChild(loginBtn);
 
@@ -68,8 +95,13 @@
         solveBtn.innerText = '✨ Resolver Questão';
         Object.assign(solveBtn.style, {
             background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
-            border: 'none', borderRadius: '8px', padding: '12px', color: 'white',
-            cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(139, 92, 246, 0.3)'
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 10px rgba(139, 92, 246, 0.3)'
         });
         solveBtn.onclick = async () => {
             solveBtn.disabled = true;
@@ -81,7 +113,10 @@
                 solveBtn.innerText = '❌ Erro';
                 console.error(e);
             }
-            setTimeout(() => { solveBtn.disabled = false; solveBtn.innerText = '✨ Resolver Questão'; }, 2000);
+            setTimeout(() => {
+                solveBtn.disabled = false;
+                solveBtn.innerText = '✨ Resolver Questão';
+            }, 2000);
         };
         panel.appendChild(solveBtn);
 
@@ -90,28 +125,40 @@
         document.body.appendChild(container);
 
         let isDragging = false, startX, startY;
+
         const onMouseDown = (e) => {
-            if (e.target.id === 'q-min') return;
+            if (e.target.id === 'q-min' || e.target.id === 'q-close') return;
             isDragging = true;
             startX = e.clientX - container.offsetLeft;
             startY = e.clientY - container.offsetTop;
         };
+
         const onMouseMove = (e) => {
             if (!isDragging) return;
             container.style.left = (e.clientX - startX) + 'px';
             container.style.top = (e.clientY - startY) + 'px';
         };
+
         const onMouseUp = () => { isDragging = false; };
-        
+
         [ball, header].forEach(el => el.addEventListener('mousedown', onMouseDown));
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
 
+        // minimizar
         header.querySelector('#q-min').onclick = () => {
             panel.style.display = 'none';
             ball.style.display = 'flex';
         };
-        ball.ondblclick = () => {
+
+        // fechar
+        header.querySelector('#q-close').onclick = () => {
+            container.remove();
+            window.quizizz_ai_loaded = false;
+        };
+
+        // abrir com 1 clique
+        ball.onclick = () => {
             ball.style.display = 'none';
             panel.style.display = 'flex';
         };
@@ -122,11 +169,14 @@
     async function solve() {
         const q = document.querySelector('#questionText')?.innerText;
         const opts = Array.from(document.querySelectorAll('.option')).map(el => ({
-            text: el.innerText.trim(), el: el
+            text: el.innerText.trim(),
+            el: el
         }));
+
         if (!q || opts.length === 0) throw 'Questão não detectada';
 
         const prompt = `Questão: ${q}\nOpções:\n${opts.map((o,i)=>`${i+1}. ${o.text}`).join('\n')}\nResponda apenas com o texto exato da opção correta.`;
+
         const res = await window.puter.ai.chat(prompt, { model: 'gemini-2.5-flash-lite' });
         const ans = res.toString().toLowerCase().trim();
 
